@@ -7,7 +7,6 @@ const dragging = ref(false);
 function selectFile(event: Event) {
   const input = event.currentTarget as HTMLInputElement;
   if (input.files?.length) emit("select", input.files[0]);
-  input.value = "";
 }
 
 function dropFile(event: DragEvent) {
