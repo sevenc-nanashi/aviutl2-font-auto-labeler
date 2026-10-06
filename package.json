@@ -1,0 +1,31 @@
+{
+  "name": "aviutl2-font-auto-labeler",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node --experimental-strip-types scripts/prepare.ts && vite --host 0.0.0.0",
+    "build": "vue-tsc --noEmit && node --experimental-strip-types scripts/prepare.ts && vite build --base=./",
+    "preview": "vite preview --host 0.0.0.0",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.8",
+    "kuromoji": "0.1.2",
+    "valibot": "^1.5.0",
+    "vue": "^3.5.43"
+  },
+  "devDependencies": {
+    "@types/kuromoji": "^0.1.3",
+    "@types/node": "^22.20.5",
+    "@vitejs/plugin-vue": "^6.0.9",
+    "prettier": "^3.6.2",
+    "typescript": "~5.9.3",
+    "vite": "^8.3.3",
+    "vue-tsc": "^3.3.12"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "packageManager": "aube@2.5.0"
+}

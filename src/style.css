@@ -1,0 +1,7 @@
+.results-table {
+  max-height: 520px;
+}
+
+.results-table .form-select {
+  min-width: 7rem;
+}
