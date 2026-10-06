@@ -13,12 +13,15 @@ export interface Font extends IniValue {
   custom: boolean;
   originalOrder: number | undefined;
   orderField: IniValue;
+  originalHide: boolean;
+  hideField: IniValue;
 }
 
 export interface FontEntry extends Font {
   reading: string;
   label: string;
   order: number;
+  hide: boolean;
 }
 
 const OrderSchema = v.pipe(
@@ -97,7 +100,7 @@ export function parseIni(source: string) {
     const bodyEnd =
       index + 1 < sections.length ? sections[index + 1].index : source.length;
     const body = source.slice(bodyStart, bodyEnd);
-    const readField = (key: "label" | "order"): IniValue => {
+    const readField = (key: "label" | "order" | "hide"): IniValue => {
       const matches = [
         ...body.matchAll(
           new RegExp(`^([\\t ]*${key}[\\t ]*=[\\t ]*)([^\\r\\n]*)`, "gm"),
@@ -131,6 +134,19 @@ export function parseIni(source: string) {
     };
     const label = readField("label");
     const orderField = readField("order");
+    const hideField = readField("hide");
+    let originalHide = false;
+    if (!hideField.prefix) {
+      const result = v.safeParse(
+        v.pipe(v.string(), v.trim(), v.picklist(["0", "1"])),
+        hideField.original,
+      );
+      if (!result.success)
+        throw new Error(
+          `${name} のhideが0または1ではありません。INIを確認してください。`,
+        );
+      originalHide = result.output === "1";
+    }
     let originalOrder: number | undefined;
     if (!orderField.prefix) {
       const result = v.safeParse(OrderSchema, orderField.original);
@@ -147,6 +163,8 @@ export function parseIni(source: string) {
         label.original.trim() !== "" && !LABELS.includes(label.original.trim()),
       originalOrder,
       orderField,
+      originalHide,
+      hideField,
     });
   }
   if (!fonts.length)
@@ -170,6 +188,7 @@ export function createEntries(
       ...font,
       reading: readings[index],
       label: font.custom ? font.original : classify(readings[index]),
+      hide: font.originalHide,
     }))
     .sort((a, b) => {
       if (a.custom !== b.custom) return a.custom ? -1 : 1;
@@ -199,6 +218,9 @@ export function writeIni(document: IniDocument, entries: FontEntry[]) {
     return [
       { ...font, value: entry.label },
       { ...font.orderField, value: String(entry.order) },
+      ...(entry.hide !== font.originalHide
+        ? [{ ...font.hideField, value: entry.hide ? "1" : "0" }]
+        : []),
     ];
   });
   let output = document.source;

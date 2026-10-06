@@ -24,7 +24,9 @@ const changes = computed(
   () =>
     entries.value.filter(
       (entry) =>
-        entry.original !== entry.label || entry.originalOrder !== entry.order,
+        entry.original !== entry.label ||
+        entry.originalOrder !== entry.order ||
+        entry.originalHide !== entry.hide,
     ).length,
 );
 const labels = computed(() => [
@@ -43,6 +45,10 @@ const groups = computed(() =>
     }))
     .filter((group) => group.count > 0),
 );
+
+function showAll() {
+  for (const entry of entries.value) entry.hide = false;
+}
 </script>
 
 <template>
@@ -50,7 +56,7 @@ const groups = computed(() =>
     <div
       class="d-flex flex-wrap align-items-baseline justify-content-between gap-2 mb-3"
     >
-      <h2 id="results-title" class="h5 mb-0">ラベル・順序</h2>
+      <h2 id="results-title" class="h5 mb-0">ラベル・順序・表示</h2>
       <span class="small text-body-secondary text-break">{{ filename }}</span>
     </div>
     <div class="row g-3 align-items-end mb-3">
@@ -95,6 +101,13 @@ const groups = computed(() =>
         >{{ group.label }} {{ group.count }}</span
       >
     </div>
+    <button
+      type="button"
+      class="btn btn-outline-secondary btn-sm mb-3"
+      @click="showAll"
+    >
+      すべてのフォントの非表示設定を解除
+    </button>
     <div
       class="table-responsive border rounded results-table"
       tabindex="0"
@@ -107,6 +120,7 @@ const groups = computed(() =>
             <th scope="col">フォント名 / 読み</th>
             <th scope="col">現在</th>
             <th scope="col">新しいラベル</th>
+            <th scope="col">非表示</th>
           </tr>
         </thead>
         <tbody>
@@ -138,9 +152,17 @@ const groups = computed(() =>
                 </option>
               </select>
             </td>
+            <td>
+              <input
+                v-model="entry.hide"
+                type="checkbox"
+                class="form-check-input"
+                :aria-label="`${entry.name}を非表示`"
+              />
+            </td>
           </tr>
           <tr v-if="!visible.length">
-            <td colspan="4" class="text-center text-body-secondary py-4">
+            <td colspan="5" class="text-center text-body-secondary py-4">
               一致するフォントがありません。
             </td>
           </tr>
@@ -151,7 +173,7 @@ const groups = computed(() =>
       class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 py-3"
     >
       <span id="changes" class="small text-body-secondary"
-        >{{ changes.toLocaleString() }}件を変更 · ラベルは編集できます</span
+        >{{ changes.toLocaleString() }}件を変更</span
       >
       <button
         id="download"
