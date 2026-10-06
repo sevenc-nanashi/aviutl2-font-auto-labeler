@@ -34,52 +34,49 @@ const OrderSchema = v.pipe(
 
 export type IniDocument = ReturnType<typeof parseIni>;
 
-export const LABELS = [
-  "0-9",
-  "A-F",
-  "G-N",
-  "O-T",
-  "U-Z",
-  "あ行",
-  "か行",
-  "さ行",
-  "た行",
-  "な行",
-  "は行",
-  "ま行",
-  "や行",
-  "ら行",
-  "わ行",
-  "その他",
-];
+const LABEL_GROUPS: Record<string, string[]> = {
+  "0-9": [..."0123456789"],
+  "A-F": [..."ABCDEF"],
+  "G-N": [..."GHIJKLMN"],
+  "O-T": [..."OPQRST"],
+  "U-Z": [..."UVWXYZ"],
+  あ行: [..."あいうえお"],
+  か行: [..."かきくけこ"],
+  さ行: [..."さしすせそ"],
+  た行: [..."たちつてと"],
+  な行: [..."なにぬねの"],
+  は行: [..."はひふへほ"],
+  ま行: [..."まみむめも"],
+  や行: [..."やゆよ"],
+  ら行: [..."らりるれろ"],
+  わ行: [..."わゐゑをん"],
+  その他: ["その他"],
+};
+
+export const LABELS = Object.entries(LABEL_GROUPS).flatMap(
+  ([group, initials]) => initials.map((initial) => `${group}\\${initial}`),
+);
 
 export function normalizeName(name: string) {
   return name.normalize("NFKC").trim().replace(/^@\s*/, "");
 }
 
 export function classify(reading: string): string {
-  const first = normalizeName(reading).toUpperCase().normalize("NFD")[0];
-  if (!first) return "その他";
-  for (const [pattern, label] of [
-    [/[0-9]/, "0-9"],
-    [/[A-F]/, "A-F"],
-    [/[G-N]/, "G-N"],
-    [/[O-T]/, "O-T"],
-    [/[U-Z]/, "U-Z"],
-    [/[ぁ-おァ-オ]/, "あ行"],
-    [/[か-こカ-コゕゖヵヶ]/, "か行"],
-    [/[さ-そサ-ソ]/, "さ行"],
-    [/[た-とタ-ト]/, "た行"],
-    [/[な-のナ-ノ]/, "な行"],
-    [/[は-ほハ-ホ]/, "は行"],
-    [/[ま-もマ-モ]/, "ま行"],
-    [/[ゃ-よャ-ヨ]/, "や行"],
-    [/[ら-ろラ-ロ]/, "ら行"],
-    [/[ゎ-んヮ-ン]/, "わ行"],
-  ] as const) {
-    if (pattern.test(first)) return label;
+  const first = normalizeName(reading)
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[ァ-ヶ]/g, (kana) =>
+      String.fromCharCode(kana.charCodeAt(0) - 0x60),
+    )
+    .replace(/[ぁぃぅぇぉっゃゅょゎゕゖ]/g, (kana) =>
+      "あいうえおつやゆよわかけ".charAt(
+        "ぁぃぅぇぉっゃゅょゎゕゖ".indexOf(kana),
+      ),
+    )[0];
+  for (const [group, initials] of Object.entries(LABEL_GROUPS)) {
+    if (initials.includes(first)) return `${group}\\${first}`;
   }
-  return "その他";
+  return "その他\\その他";
 }
 
 // Replacing value ranges keeps unrelated settings, comments, BOM and newlines intact.
@@ -160,7 +157,9 @@ export function parseIni(source: string) {
       ...label,
       name,
       custom:
-        label.original.trim() !== "" && !LABELS.includes(label.original.trim()),
+        label.original.trim() !== "" &&
+        !Object.hasOwn(LABEL_GROUPS, label.original.trim()) &&
+        !LABELS.includes(label.original.trim()),
       originalOrder,
       orderField,
       originalHide,
